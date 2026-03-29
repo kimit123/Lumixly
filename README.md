@@ -112,3 +112,4 @@ lumixly/
 
 ## Support
 For help deploying, open a chat with Claude and paste any error messages.
+# trigger
