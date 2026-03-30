@@ -1,119 +1,99 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { Check, CreditCard, ArrowLeft } from 'lucide-react'
+
+function Sidebar({ active }: { active: string }) {
+  const links = [
+    { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
+    { href: '/upload', label: 'Upload Photos', icon: '↑' },
+    { href: '/orders', label: 'My Orders', icon: '📋' },
+    { href: '/billing', label: 'Billing', icon: '💳' },
+  ]
+  return (
+    <aside style={{ width: 240, background: '#fff', borderRight: '1px solid #e5e7eb', height: '100vh', position: 'fixed', left: 0, top: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+        <Link href="/" style={{ fontSize: 18, fontWeight: 800, color: '#111', textDecoration: 'none' }}>Lumixly</Link>
+      </div>
+      <nav style={{ flex: 1, padding: '16px 12px' }}>
+        {links.map(l => (
+          <Link key={l.href} href={l.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 8, marginBottom: 2, fontSize: 14, fontWeight: active === l.href ? 600 : 400, color: active === l.href ? '#2563eb' : '#6b7280', background: active === l.href ? '#eff6ff' : 'transparent', textDecoration: 'none' }}>
+            <span style={{ fontSize: 16 }}>{l.icon}</span> {l.label}
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  )
+}
 
 const PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 19,
-    images: 100,
-    perImage: 0.40,
-    features: ['100 images/month', 'Background removal', 'All crop types', 'Both output sizes'],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 49,
-    images: 500,
-    perImage: 0.25,
-    features: ['500 images/month', 'Priority processing', 'Bulk 1000 upload', 'Priority support'],
-    popular: true,
-  },
+  { id: 'starter', name: 'Starter', price: 19, images: 100, per: '£0.40', features: ['100 images/month', 'All crop types', 'Both output sizes', 'Email support'] },
+  { id: 'pro', name: 'Pro', price: 49, images: 500, per: '£0.25', features: ['500 images/month', 'Priority processing', 'Bulk 1,000 upload', 'Priority support'], popular: true },
 ]
 
 export default function BillingPage() {
   const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
-      supabase.from('profiles').select('*').eq('id', data.user.id).single()
-        .then(({ data: p }) => { setProfile(p); setLoading(false) })
+    const sb = createClient()
+    sb.auth.getUser().then(({ data }) => {
+      if (!data.user) { router.push('/auth/login'); return }
+      sb.from('profiles').select('*').eq('id', data.user.id).single().then(({ data: p }) => setProfile(p))
     })
-  }, [])
-
-  const handleUpgrade = async (planId: string) => {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    window.location.href = `/api/stripe?plan=${planId}`
-  }
-
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400">Loading...</div>
+  }, [router])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="text-xl font-bold text-sky-600">Lumixly</Link>
-        <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Dashboard
-        </Link>
-      </nav>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: '#f9fafb', minHeight: '100vh' }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); * { box-sizing: border-box; }`}</style>
+      <Sidebar active="/billing" />
+      <main style={{ marginLeft: 240, padding: '40px 48px' }}>
+        <div style={{ maxWidth: 860 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111', letterSpacing: '-0.5px', marginBottom: 6 }}>Billing</h1>
+          <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 36 }}>
+            Current plan: <strong style={{ color: '#2563eb', textTransform: 'capitalize' }}>{profile?.plan || 'Free'}</strong> &nbsp;•&nbsp; {profile?.credits_used || 0}/{profile?.credits_limit || 10} images used this month
+          </p>
 
-      <div className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Billing</h1>
-        <p className="text-gray-500 text-sm mb-8">
-          Current plan: <span className="font-semibold text-sky-600 capitalize">{profile?.plan || 'Free'}</span>
-          {' '}• {profile?.credits_used || 0}/{profile?.credits_limit || 10} images used this month
-        </p>
-
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {PLANS.map(plan => {
-            const isCurrent = profile?.plan === plan.id
-            return (
-              <div key={plan.id} className={`bg-white rounded-xl border-2 p-6 ${
-                plan.popular ? 'border-sky-500' : 'border-gray-100'
-              }`}>
-                {plan.popular && (
-                  <div className="text-xs font-bold bg-sky-500 text-white px-3 py-1 rounded-full inline-block mb-4">MOST POPULAR</div>
-                )}
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-black text-gray-900">£{plan.price}</span>
-                  <span className="text-gray-500 text-sm">/month</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
+            {PLANS.map(p => {
+              const isCurrent = profile?.plan === p.id
+              return (
+                <div key={p.id} style={{ background: '#fff', borderRadius: 16, border: `2px solid ${p.popular ? '#2563eb' : '#e5e7eb'}`, padding: 32, position: 'relative' }}>
+                  {p.popular && <div style={{ position: 'absolute', top: -12, left: 24, background: '#2563eb', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 14px', borderRadius: 100 }}>MOST POPULAR</div>}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>{p.name}</div>
+                  <div style={{ fontSize: 42, fontWeight: 800, color: '#111', letterSpacing: '-1.5px', lineHeight: 1 }}>£{p.price}<span style={{ fontSize: 15, fontWeight: 500, color: '#9ca3af' }}>/mo</span></div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2563eb', margin: '16px 0 4px' }}>{p.images} images/month</div>
+                  <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 20 }}>{p.per} per extra image</div>
+                  <ul style={{ listStyle: 'none', padding: 0, marginBottom: 24 }}>
+                    {p.features.map(f => (
+                      <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                        <span style={{ width: 18, height: 18, background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#16a34a', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {isCurrent ? (
+                    <div style={{ textAlign: 'center', padding: '12px', borderRadius: 8, border: '2px solid #2563eb', color: '#2563eb', fontSize: 14, fontWeight: 700 }}>✓ Current Plan</div>
+                  ) : (
+                    <a href={`/api/stripe?plan=${p.id}`} style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: 8, background: p.popular ? '#2563eb' : '#111', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                      Upgrade to {p.name}
+                    </a>
+                  )}
                 </div>
-                <div className="text-sm text-sky-600 font-semibold mb-1">{plan.images} images/month included</div>
-                <div className="text-xs text-gray-400 mb-5">£{plan.perImage} per extra image</div>
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map(f => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                      <Check className="w-4 h-4 text-sky-500" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                {isCurrent ? (
-                  <div className="w-full py-2.5 rounded-lg border-2 border-sky-500 text-sky-600 font-semibold text-center text-sm">
-                    ✓ Current plan
-                  </div>
-                ) : (
-                  <button onClick={() => handleUpgrade(plan.id)}
-                    className="w-full py-2.5 rounded-lg bg-sky-600 text-white font-semibold text-sm hover:bg-sky-700 transition">
-                    Upgrade to {plan.name}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {profile?.stripe_subscription_id && (
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <CreditCard className="w-5 h-5 text-gray-400" />
-              <h3 className="font-semibold text-gray-900">Subscription</h3>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">Manage your billing in the Stripe customer portal.</p>
-            <a href="/api/stripe/portal" className="text-sm text-sky-600 font-medium hover:underline">
-              Open billing portal →
-            </a>
+              )
+            })}
           </div>
-        )}
-      </div>
+
+          {profile?.stripe_subscription_id && (
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', padding: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 8 }}>Manage Subscription</h3>
+              <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 16 }}>Update payment method, view invoices, or cancel your subscription.</p>
+              <a href="/api/stripe/portal" style={{ fontSize: 14, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Open billing portal →</a>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }
