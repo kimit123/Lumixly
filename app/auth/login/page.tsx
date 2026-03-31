@@ -18,15 +18,17 @@ export default function LoginPage() {
     const { error } = await sb.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
     // Wait for session to be fully established
-    await new Promise(r => setTimeout(r, 500))
-    // Check role and redirect
+    await new Promise(r => setTimeout(r, 800))
+    // Check role and redirect using hard navigation
     const { data: { user } } = await sb.auth.getUser()
     if (user) {
-      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single()
+      const { data: profile, error: pErr } = await sb.from('profiles').select('role').eq('id', user.id).single()
+      if (pErr) { setError('Could not load profile: ' + pErr.message); setLoading(false); return }
       const role = profile?.role
-      if (role === 'admin') router.replace('/admin/dashboard')
-      else if (role === 'team') router.replace('/team')
-      else router.replace('/dashboard')
+      // Hard redirect — bypasses any Next.js caching
+      if (role === 'admin') window.location.href = '/admin/dashboard'
+      else if (role === 'team') window.location.href = '/team'
+      else window.location.href = '/dashboard'
     }
   }
 
