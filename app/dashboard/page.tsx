@@ -29,8 +29,8 @@ export default function CustomerDashboard() {
         sb.from('orders').select('*').eq('customer_id', data.user.id).order('created_at', { ascending: false }).limit(5),
         sb.from('notifications').select('*').eq('user_id', data.user.id).eq('read', false).order('created_at', { ascending: false }).limit(5),
       ])
-      if (profileRes.data?.role === 'admin') { router.push('/admin'); return }
-      if (profileRes.data?.role === 'team') { router.push('/team'); return }
+      if (profileRes.data?.role === 'admin') { router.replace('/admin/dashboard'); return }
+      if (profileRes.data?.role === 'team') { router.replace('/team'); return }
       setProfile(profileRes.data)
       setOrders(ordersRes.data || [])
       setNotifications(notifRes.data || [])

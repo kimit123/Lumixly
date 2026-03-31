@@ -17,13 +17,16 @@ export default function LoginPage() {
     const sb = createClient()
     const { error } = await sb.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
+    // Wait for session to be fully established
+    await new Promise(r => setTimeout(r, 500))
     // Check role and redirect
     const { data: { user } } = await sb.auth.getUser()
     if (user) {
       const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single()
-      if (profile?.role === 'admin') router.push('/admin')
-      else if (profile?.role === 'team') router.push('/team')
-      else router.push('/dashboard')
+      const role = profile?.role
+      if (role === 'admin') router.replace('/admin/dashboard')
+      else if (role === 'team') router.replace('/team')
+      else router.replace('/dashboard')
     }
   }
 
