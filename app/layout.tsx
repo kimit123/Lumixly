@@ -2,18 +2,14 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Lumixly — AI Photo Editing for Ecommerce',
-  description: 'Professional background removal, headless crop, and body-aware photo editing. Built for ecommerce sellers.',
+  title: 'Lumixly — Professional Photo Editing for Ecommerce',
+  description: 'Upload your photos, we edit them, you approve. Professional ecommerce photo editing service.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body style={{ margin: 0, padding: 0 }}>{children}</body>
     </html>
   )
 }
